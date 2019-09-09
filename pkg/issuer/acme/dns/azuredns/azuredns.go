@@ -68,16 +68,31 @@ func NewDNSProviderCredentials(environment, clientID, clientSecret, subscription
 		return nil, err
 	}
 
-	spt, err := adal.NewServicePrincipalToken(*oauthConfig, clientID, clientSecret, env.ResourceManagerEndpoint)
-	if err != nil {
-		return nil, err
+	var token *adal.ServicePrincipalToken
+	if clientID != "" {
+		klog.Info("azuredns authenticating with clientID and secret key")
+		token, err = adal.NewServicePrincipalToken(*oauthConfig, clientID, clientSecret, env.ResourceManagerEndpoint)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		klog.Info("azuredns authenticating with managed identity")
+		endpoint, err := adal.GetMSIVMEndpoint()
+		if err != nil {
+			return nil, err
+		}
+
+		token, err = adal.NewServicePrincipalTokenFromMSI(endpoint, env.ServiceManagementEndpoint)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	rc := dns.NewRecordSetsClientWithBaseURI(env.ResourceManagerEndpoint, subscriptionID)
-	rc.Authorizer = autorest.NewBearerAuthorizer(spt)
+	rc.Authorizer = autorest.NewBearerAuthorizer(token)
 
 	zc := dns.NewZonesClientWithBaseURI(env.ResourceManagerEndpoint, subscriptionID)
-	zc.Authorizer = autorest.NewBearerAuthorizer(spt)
+	zc.Authorizer = autorest.NewBearerAuthorizer(token)
 
 	return &DNSProvider{
 		dns01Nameservers:  dns01Nameservers,

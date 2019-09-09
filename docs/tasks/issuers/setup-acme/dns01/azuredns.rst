@@ -53,8 +53,11 @@ You can configure the issuer like so:
        - dns01:
            azuredns:
              # Service principal clientId (also called appId)
+             # Optional. If omitted, a Managed Identity will be used for Azure API authentication.
+             # Requires aadPodIdentity to be configured in the cluster
              clientID: AZURE_SERVICE_PRINCIPAL_ID
              # A secretKeyRef to a service principal ClientSecret (password)
+             # Required if clientID is set
              # ref: https://docs.microsoft.com/en-us/azure/container-service/kubernetes/container-service-kubernetes-service-principal
              clientSecretSecretRef:
                name: AZUREDNS_SECRET_KEY_NAME
